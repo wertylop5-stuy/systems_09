@@ -29,8 +29,8 @@ char* get_regular_files(char *curr_dir) {
 	
 	while (entry = readdir(dir)) {
 		if (entry->d_type == DT_REG) {
-			res = strcat(res, entry->d_name);
-			res = strcat(res, "\n");
+			sprintf(res, "%s\n\t%s", res, entry->d_name);
+			sprintf(res, "%s\n\t%s", res, entry->d_name);
 		}
 	}
 	
