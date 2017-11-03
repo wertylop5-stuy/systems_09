@@ -11,6 +11,7 @@ char* get_directories(char *);
 
 off_t get_files_size(char *);
 off_t get_full_dir_size(char *);
+off_t my_du_abc(char *);
 
 char* better_size(off_t);
 

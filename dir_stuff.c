@@ -94,38 +94,64 @@ off_t get_full_dir_size(char *curr_dir) {
 	
 	struct dirent *entry;		//readdir() constructs a struct dirent then returns it
 	struct stat file;		//stat() will directly set the values in struct stat
-	char path[64];			//dir + filename
+	char path[64];			//curr_dir + filename
 	off_t total = 0;
 	
 	int status;
 	
 	while (entry = readdir(dir)) {
-		//printf("entry: %s\n", entry->d_name);
+		//construct the file path for current file
 		sprintf(path, "%s/%s", curr_dir, entry->d_name);
-		//printf("path: %s\n", path);
-
-		if (entry->d_type == DT_REG) {
-			
+		
+		//ignore the size of .. directory
+		if (strncmp(entry->d_name, "..", strlen(entry->d_name))) {
 			status = stat(path, &file);
 			if (status < 0) {
 				fprintf(stderr, "error %d: %s\n", errno, strerror(errno));
 				exit(1);
 			}
-			//printf("size of %s: %lu\n", path, file.st_size);
+			printf("%lu\t%s\n", file.st_size, path);
 			
 			total += file.st_size;
 		}
+		
+		//recurse through all subdirectories except . and .. (otherwise, infinite recursion)
 		//0 means equal, and 0 is false. therefore, skip it if its 0
-		else if (strncmp(entry->d_name, "..", strlen(entry->d_name)) && strncmp(entry->d_name, ".", strlen(entry->d_name))){
-			//printf("dir case: %s\n", entry->d_name);
+		if (entry->d_type == DT_DIR &&
+				strncmp(entry->d_name, "..", strlen(entry->d_name)) &&
+				strncmp(entry->d_name, ".", strlen(entry->d_name))) {
 			
 			sprintf(path, "%s/%s", curr_dir, entry->d_name);
 			total += get_full_dir_size(path);
-			//sprintf(path, "%s", curr_dir);
 		}
 	}
 	
 	return total;
+}
+
+//abc refers to the flags
+off_t my_du_abc(char *curr_dir) {
+	DIR *dir;
+	dir = opendir(curr_dir);
+	
+	struct dirent *entry;		//readdir() constructs a struct dirent then returns it
+	struct stat file;		//stat() will directly set the values in struct stat
+	char path[64];			//dir + filename
+	off_t total = 0;
+	
+	int status;
+	
+	//add the size of the "." directory in the root
+	status = stat(".", &file);
+	if (status < 0) {
+		fprintf(stderr, "error %d: %s\n", errno, strerror(errno));
+		exit(1);
+	}
+	printf("%lu\t%s\n", file.st_size, path);
+	
+	total += file.st_size;
+	
+	return total + get_full_dir_size(curr_dir);
 }
 
 
@@ -134,7 +160,7 @@ char* better_size(off_t size) {
 	char *out = malloc(30*sizeof(char));
 	
 	if (size < 1024) {
-		sprintf(out, "B: %lu", size);
+		sprintf(out, "%lu B", size);
 		return out;
 	}
 	
@@ -146,19 +172,19 @@ char* better_size(off_t size) {
 	
 	switch(counter) {
 		case 0:
-			sprintf(out, "B: %f", more_info);
+			sprintf(out, "%f B", more_info);
 		break;
 		
 		case 1:
-			sprintf(out, "KB: %f", more_info);
+			sprintf(out, "%f KB", more_info);
 		break;
 
 		case 2:
-			sprintf(out, "MB: %f", more_info);
+			sprintf(out, "%f MB", more_info);
 		break;
 	
 		case 3:
-			sprintf(out, "GB: %f", more_info);
+			sprintf(out, "%f GB", more_info);
 		break;
 	}
 	
